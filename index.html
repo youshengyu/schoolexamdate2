@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>115/116學年度 研究所推甄日程行事曆</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Microsoft JhengHei', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .event-badge {
+            transition: all 0.15s ease-in-out;
+        }
+        .event-badge:hover {
+            transform: translateY(-1px);
+            filter: brightness(0.95);
+        }
+        /* Toast Animation */
+        @keyframes slideInUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-animate {
+            animation: slideInUp 0.25s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-200 shrink-0">
+                    <i class="fa-solid font-bold text-xl fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-lg sm:text-xl font-bold text-slate-900 leading-tight">115/116學年度 研究所推甄行事曆</h1>
+                        <span class="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-100 hidden sm:inline-block">互動分享版</span>
+                    </div>
+                    <p class="text-xs text-slate-500">全台大專院校推甄報名、甄試與放榜日程查詢與行事曆匯出系統</p>
+                </div>
+            </div>
+
+            <!-- Header Quick Tools & View Switcher -->
+            <div class="flex items-center flex-wrap gap-2">
+                <button id="viewCalendarBtn" onclick="switchView('calendar')" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-xs">
+                    <i class="fa-regular fa-calendar-days"></i> 行事曆檢視
+                </button>
+                <button id="viewListBtn" onclick="switchView('list')" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200">
+                    <i class="fa-solid fa-list-check"></i> 學校清單
+                </button>
+                
+                <div class="h-6 w-px bg-slate-200 mx-0.5 hidden sm:block"></div>
+
+                <button onclick="shareCalendar()" class="px-3 py-1.5 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200">
+                    <i class="fa-solid fa-share-nodes"></i> <span class="hidden sm:inline">分享此頁面</span>
+                </button>
+                <button onclick="exportICal()" class="px-3 py-1.5 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200">
+                    <i class="fa-solid fa-calendar-plus"></i> <span class="hidden sm:inline">匯出行事曆 (.ics)</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+        <!-- Controls Container -->
+        <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 sm:p-5 mb-6 space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+                <!-- Search Box -->
+                <div class="relative">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">關鍵字搜尋</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="text" id="searchInput" placeholder="搜尋學校名稱..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition">
+                    </div>
+                </div>
+
+                <!-- Category Filter (National / Private) -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">公私立類別</label>
+                    <select id="typeSelect" onchange="handleTypeChange()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition bg-white">
+                        <option value="ALL">全部類別 (國立 & 私立)</option>
+                        <option value="國立">國立大學</option>
+                        <option value="私立">私立大學</option>
+                    </select>
+                </div>
+
+                <!-- Cascading University Dropdown -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">指定目標學校</label>
+                    <select id="schoolSelect" onchange="renderApp()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition bg-white">
+                        <option value="ALL">所有學校</option>
+                    </select>
+                </div>
+
+                <!-- Event Type Filter -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">日程項目篩選</label>
+                    <select id="eventTypeSelect" onchange="renderApp()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition bg-white">
+                        <option value="ALL">全部日程項目</option>
+                        <option value="報名">報名時間</option>
+                        <option value="繳件">繳件截止</option>
+                        <option value="甄試">甄試 / 面試</option>
+                        <option value="放榜">放榜日期</option>
+                    </select>
+                </div>
+
+                <!-- Tracked Favorites Toggle -->
+                <div class="flex flex-col justify-end">
+                    <button id="trackFilterBtn" onclick="toggleTrackFilter()" class="w-full py-2 px-3 border border-slate-200 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2 bg-slate-50 text-slate-700 hover:bg-slate-100">
+                        <i class="fa-regular fa-star text-amber-500" id="trackFilterIcon"></i>
+                        <span id="trackFilterText">只顯示追蹤學校</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <span class="font-semibold text-slate-500">圖例說明:</span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> 報名時間
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span> 繳件截止
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span> 甄試 / 面試
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 放榜日期
+                    </span>
+                </div>
+                <div id="statsCounter" class="text-slate-500 font-medium flex items-center gap-3">
+                    載入中...
+                </div>
+            </div>
+        </div>
+
+        <div id="calendarView" class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 sm:p-6">
+            <!-- Calendar Navigation Header -->
+            <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <h2 id="currentMonthLabel" class="text-xl sm:text-2xl font-bold text-slate-900">2026 年 10 月</h2>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">115/116學年推甄季</span>
+                    
+                    <!-- Month Jump Buttons -->
+                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-medium ml-2">
+                        <button onclick="jumpToMonth(2026, 8)" class="px-2 py-1 rounded-lg hover:bg-white text-slate-600 transition">9月</button>
+                        <button onclick="jumpToMonth(2026, 9)" class="px-2 py-1 rounded-lg hover:bg-white text-slate-600 transition">10月</button>
+                        <button onclick="jumpToMonth(2026, 10)" class="px-2 py-1 rounded-lg hover:bg-white text-slate-600 transition">11月</button>
+                        <button onclick="jumpToMonth(2026, 11)" class="px-2 py-1 rounded-lg hover:bg-white text-slate-600 transition">12月</button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="changeMonth(-1)" title="上一個月" class="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button onclick="resetToToday()" class="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-700 transition">
+                        回到 2026/10 月
+                    </button>
+                    <button onclick="changeMonth(1)" title="下一個月" class="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Calendar Days Header -->
+            <div class="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs font-bold text-slate-400 uppercase mb-2">
+                <div class="py-2 text-rose-500">日</div>
+                <div class="py-2">一</div>
+                <div class="py-2">二</div>
+                <div class="py-2">三</div>
+                <div class="py-2">四</div>
+                <div class="py-2">五</div>
+                <div class="py-2 text-indigo-600">六</div>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div id="calendarGrid" class="grid grid-cols-7 gap-1 sm:gap-2 auto-rows-fr">
+                <!-- Dynamically Generated -->
+            </div>
+        </div>
+
+        <div id="listView" class="hidden space-y-4">
+            <div id="schoolCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Dynamically Generated -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Event Details Modal -->
+    <div id="eventModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <!-- Modal Header -->
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div class="flex items-center gap-2">
+                    <i class="fa-regular fa-calendar-check text-indigo-600 text-lg"></i>
+                    <h3 id="modalDateTitle" class="font-bold text-slate-800 text-base">2026-10-15 重要日程</h3>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div id="modalContent" class="p-5 overflow-y-auto space-y-3 custom-scrollbar flex-1">
+                <!-- Dynamically Populated -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-5 py-3 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+                <span class="text-xs text-slate-400">點擊卡片可切換關注狀態</span>
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-medium rounded-xl transition">
+                    關閉
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Floating Alert Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        // Full Dataset
+        const rawUniversities = [
+            // 1. 在每個學校物件中新增 url 欄位 (若尚未填寫可先留空或省略)
+            { name: "國立臺灣大學", type: "國立", url: "https://gra108.ntu.edu.tw/", applyStart: "2026-09-30", applyEnd: "2026-10-07", submitEnd: "2026-10-08", exam: "依各系所規定", release: "初試: 2026-11-04 | 複試: 2026-11-19", dates: { examStart: null, examEnd: null, releaseDates: ["2026-11-04", "2026-11-19"] } },
+            { name: "國立清華大學", type: "國立", url: "https://adms.site.nthu.edu.tw/", applyStart: "2026-10-07", applyEnd: "2026-10-13", submitEnd: "2026-10-13", exam: "115/10/22-11/16", release: "梯次: 2026-11-06, 2026-11-13, 2026-11-20", dates: { examStart: "2026-10-22", examEnd: "2026-11-16", releaseDates: ["2026-11-06", "2026-11-13", "2026-11-20"] } },
+            { name: "國立陽明交通大學", type: "國立", url: "", applyStart: "2026-10-01", applyEnd: "2026-10-07", submitEnd: "2026-10-07", exam: "115/10/16-11/12", release: "梯次: 2026-11-05~11/12, 2026-11-21~11/27", dates: { examStart: "2026-10-16", examEnd: "2026-11-12", releaseDates: ["2026-11-05", "2026-11-21"] } },
+            { name: "國立成功大學", type: "國立", applyStart: "2026-09-29", applyEnd: "2026-10-05", submitEnd: "2026-10-05", exam: "115/10/29-11/08", release: "初試: 2026-10-27 | 複試: 2026-11-20", dates: { examStart: "2026-10-29", examEnd: "2026-11-08", releaseDates: ["2026-10-27", "2026-11-20"] } },
+            { name: "國立政治大學", type: "國立", applyStart: "2026-09-29", applyEnd: "2026-10-13", submitEnd: "2026-10-13", exam: "115/11/08-11/21", release: "複試: 2026-12-01", dates: { examStart: "2026-11-08", examEnd: "2026-11-21", releaseDates: ["2026-12-01"] } },
+            { name: "國立臺北大學", type: "國立", applyStart: "2026-09-23", applyEnd: "2026-10-07", submitEnd: "2026-10-07", exam: "依各系所規定", release: "複試: 2026-11-16", dates: { examStart: null, examEnd: null, releaseDates: ["2026-11-16"] } },
+            { name: "國立中興大學", type: "國立", applyStart: "2026-10-01", applyEnd: "2026-10-12", submitEnd: "2026-10-12", exam: "115/10/17-11/15", release: "初試: 2026-11-06 | 複試: 2026-11-20", dates: { examStart: "2026-10-17", examEnd: "2026-11-15", releaseDates: ["2026-11-06", "2026-11-20"] } },
+            { name: "國立中央大學", type: "國立", applyStart: "2026-09-30", applyEnd: "2026-10-07", submitEnd: "2026-10-07", exam: "115/10/19-11/11", release: "第1梯: 2026-11-06 | 第2梯: 2026-11-20", dates: { examStart: "2026-10-19", examEnd: "2026-11-11", releaseDates: ["2026-11-06", "2026-11-20"] } },
+            { name: "國立中山大學", type: "國立", applyStart: "2026-10-01", applyEnd: "2026-10-14", submitEnd: "2026-10-14", exam: "115/10/24-11/12", release: "初試: 2026-11-03 | 複試: 2026-11-24", dates: { examStart: "2026-10-24", examEnd: "2026-11-12", releaseDates: ["2026-11-03", "2026-11-24"] } },
+            { name: "國立中正大學", type: "國立", applyStart: "2026-09-30", applyEnd: "2026-10-12", submitEnd: "2026-10-13", exam: "115/11/12-11/15", release: "初試: 2026-11-06 | 複試: 2026-11-20", dates: { examStart: "2026-11-12", examEnd: "2026-11-15", releaseDates: ["2026-11-06", "2026-11-20"] } },
+            { name: "臺北市立大學", type: "國立", applyStart: "2026-09-22", applyEnd: "2026-10-06", submitEnd: "2026-10-06", exam: "115/10/31-11/01", release: "初試: 2026-10-21 | 複試: 2026-11-16", dates: { examStart: "2026-10-31", examEnd: "2026-11-01", releaseDates: ["2026-10-21", "2026-11-16"] } },
+            { name: "國立暨南大學", type: "國立", applyStart: "2026-10-01", applyEnd: "2026-10-23", submitEnd: "2026-10-23", exam: "115/11/06-11/13", release: "初試: 2026-11-04 | 複試: 2026-11-20", dates: { examStart: "2026-11-06", examEnd: "2026-11-13", releaseDates: ["2026-11-04", "2026-11-20"] } },
+            { name: "國立聯合大學", type: "國立", applyStart: "2026-10-13", applyEnd: "2026-10-27", submitEnd: "2026-10-28", exam: "115/11/19", release: "初試: 2026-11-16 | 複試: 2026-12-01", dates: { examStart: "2026-11-19", examEnd: "2026-11-19", releaseDates: ["2026-11-16", "2026-12-01"] } },
+            { name: "國立宜蘭大學", type: "國立", applyStart: "2026-09-21", applyEnd: "2026-10-14", submitEnd: "2026-10-14", exam: "115/11/13", release: "初試: 2026-11-06 | 複試: 2026-11-27", dates: { examStart: "2026-11-13", examEnd: "2026-11-13", releaseDates: ["2026-11-06", "2026-11-27"] } },
+            { name: "國立高雄大學", type: "國立", applyStart: "2026-09-29", applyEnd: "2026-10-19", submitEnd: "2026-10-19", exam: "115/10/31", release: "初試: 2026-10-27 | 複試: 2026-11-11", dates: { examStart: "2026-10-31", examEnd: "2026-10-31", releaseDates: ["2026-10-27", "2026-11-11"] } },
+            { name: "國立嘉義大學", type: "國立", applyStart: "2026-10-05", applyEnd: "2026-10-21", submitEnd: "2026-10-23", exam: "115/11/14", release: "初試: 2026-11-06 | 複試: 2026-11-27", dates: { examStart: "2026-11-14", examEnd: "2026-11-14", releaseDates: ["2026-11-06", "2026-11-27"] } },
+            { name: "國立臺南大學", type: "國立", applyStart: "2026-09-14", applyEnd: "2026-09-30", submitEnd: "2026-09-30", exam: "115/10/30-11/01", release: "初試: 2026-10-23 | 複試: 2026-11-10", dates: { examStart: "2026-10-30", examEnd: "2026-11-01", releaseDates: ["2026-10-23", "2026-11-10"] } },
+            { name: "國立臺東大學", type: "國立", applyStart: "2026-10-02", applyEnd: "2026-10-30", submitEnd: "2026-10-30", exam: "115/11/21", release: "初試: 2026-11-12 | 複試: 2026-11-27", dates: { examStart: "2026-11-21", examEnd: "2026-11-21", releaseDates: ["2026-11-12", "2026-11-27"] } },
+            { name: "國立臺灣科技大學", type: "國立", applyStart: "2026-09-30", applyEnd: "2026-10-06", submitEnd: "2026-10-07", exam: "115/11/13-11/15", release: "初試: 2026-11-05 | 複試: 2026-12-02", dates: { examStart: "2026-11-13", examEnd: "2026-11-15", releaseDates: ["2026-11-05", "2026-12-02"] } },
+            { name: "國立臺北科技大學", type: "國立", applyStart: "2026-10-07", applyEnd: "2026-10-19", submitEnd: "2026-10-20", exam: "115/11/16-11/21", release: "初試: 2026-11-06 | 複試: 2026-12-08", dates: { examStart: "2026-11-16", examEnd: "2026-11-21", releaseDates: ["2026-11-06", "2026-12-08"] } },
+            { name: "國立臺灣師範大學", type: "國立", applyStart: "2026-09-29", applyEnd: "2026-10-07", submitEnd: "2026-10-08", exam: "115/10/24-11/08", release: "放榜: 2026-11-19", dates: { examStart: "2026-10-24", examEnd: "2026-11-08", releaseDates: ["2026-11-19"] } },
+            { name: "國立彰化師範大學", type: "國立", applyStart: "2026-09-22", applyEnd: "2026-10-07", submitEnd: "2026-10-07", exam: "115/10/30-11/03", release: "初試: 2026-10-27 | 複試: 2026-11-20", dates: { examStart: "2026-10-30", examEnd: "2026-11-03", releaseDates: ["2026-10-27", "2026-11-20"] } },
+            { name: "國立高雄師範大學", type: "國立", applyStart: "2026-10-01", applyEnd: "2026-10-15", submitEnd: "2026-10-16", exam: "依各所規定", release: "初試: 2026-11-03 | 複試: 2026-11-24", dates: { examStart: null, examEnd: null, releaseDates: ["2026-11-03", "2026-11-24"] } },
+
+            // Private Universities
+            { name: "中國文化大學", type: "私立", applyStart: "2025-10-14", applyEnd: "2025-11-13", submitEnd: "2025-11-13", exam: "114/11/21-11/22", release: "2025-12-03", dates: { examStart: "2025-11-21", examEnd: "2025-11-22", releaseDates: ["2025-12-03"] } },
+            { name: "文藻外語大學", type: "私立", applyStart: "2026-10-12", applyEnd: "2026-11-12", submitEnd: "2026-11-12", exam: "115/11/21", release: "初試: 2026-11-17 | 複試: 2026-12-03", dates: { examStart: "2026-11-21", examEnd: "2026-11-21", releaseDates: ["2026-11-17", "2026-12-03"] } },
+            { name: "慈濟大學", type: "私立", applyStart: "2026-10-19", applyEnd: "2026-10-30", submitEnd: "2026-10-30", exam: "115/11/20-11/21", release: "初試: 2026-11-13 | 複試: 2026-11-30", dates: { examStart: "2026-11-20", examEnd: "2026-11-21", releaseDates: ["2026-11-13", "2026-11-30"] } },
+            { name: "靜宜大學", type: "私立", applyStart: "2026-10-09", applyEnd: "2026-10-30", submitEnd: "2026-10-30", exam: "115/11/14", release: "初試: 2026-11-11 | 複試: 2026-11-25", dates: { examStart: "2026-11-14", examEnd: "2026-11-14", releaseDates: ["2026-11-11", "2026-11-25"] } },
+            { name: "臺北醫學大學", type: "私立", applyStart: "2026-10-19", applyEnd: "2026-10-28", submitEnd: "2026-10-28", exam: "115/11/19-11/21", release: "初試: 2026-11-16 | 複試: 2026-11-23", dates: { examStart: "2026-11-19", examEnd: "2026-11-21", releaseDates: ["2026-11-16", "2026-11-23"] } },
+            { name: "高雄醫學大學", type: "私立", applyStart: "2026-10-12", applyEnd: "2026-10-23", submitEnd: "2026-11-02", exam: "115/11/06-11/15", release: "初試: 2026-11-03 | 複試: 2026-11-30", dates: { examStart: "2026-11-06", examEnd: "2026-11-15", releaseDates: ["2026-11-03", "2026-11-30"] } },
+            { name: "馬偕醫學大學", type: "私立", applyStart: "2026-10-05", applyEnd: "2026-11-02", submitEnd: "2026-11-02", exam: "115/11/27", release: "初試: 2026-11-09 | 複試: 2026-12-07", dates: { examStart: "2026-11-27", examEnd: "2026-11-27", releaseDates: ["2026-11-09", "2026-12-07"] } },
+            { name: "東吳大學", type: "私立", applyStart: "2026-10-12", applyEnd: "2026-10-27", submitEnd: "2026-10-27", exam: "依各校系訂定", release: "初試: 2026-11-12 | 複試: 2026-12-07", dates: { examStart: null, examEnd: null, releaseDates: ["2026-11-12", "2026-12-07"] } },
+            { name: "世新大學", type: "私立", applyStart: "2026-10-13", applyEnd: "2026-10-28", submitEnd: "2026-10-28", exam: "全書面審查", release: "2026-11-27", dates: { examStart: null, examEnd: null, releaseDates: ["2026-11-27"] } },
+            { name: "銘傳大學", type: "私立", applyStart: "2026-10-08", applyEnd: "2026-10-27", submitEnd: "2026-10-27", exam: "115/11/21", release: "初試: 2026-11-13 | 複試: 2026-12-04", dates: { examStart: "2026-11-21", examEnd: "2026-11-21", releaseDates: ["2026-11-13", "2026-12-04"] } },
+            { name: "實踐大學", type: "私立", applyStart: "2026-10-12", applyEnd: "2026-10-27", submitEnd: "2026-10-27", exam: "115/11/22", release: "初試: 2026-11-16 | 複試: 2026-11-30", dates: { examStart: "2026-11-22", examEnd: "2026-11-22", releaseDates: ["2026-11-16", "2026-11-30"] } },
+            { name: "大同大學", type: "私立", applyStart: "2026-10-12", applyEnd: "2026-11-09", submitEnd: "2026-11-09", exam: "115/11/23", release: "初試: 2026-11-17 | 複試: 2026-12-01", dates: { examStart: "2026-11-23", examEnd: "2026-11-23", releaseDates: ["2026-11-17", "2026-12-01"] } },
+            { name: "中原大學", type: "私立", applyStart: "2026-10-07", applyEnd: "2026-10-28", submitEnd: "2026-10-28", exam: "115/11/22前", release: "複試: 2026-12-08", dates: { examStart: "2026-11-22", examEnd: "2026-11-22", releaseDates: ["2026-12-08"] } },
+            { name: "元智大學", type: "私立", applyStart: "2026-10-14", applyEnd: "2026-10-28", submitEnd: "2026-10-28", exam: "115/11/09-11/11", release: "初試: 2026-11-05 | 複試: 2026-11-27", dates: { examStart: "2026-11-09", examEnd: "2026-11-11", releaseDates: ["2026-11-05", "2026-11-27"] } },
+            { name: "輔仁大學", type: "私立", applyStart: "2026-09-30", applyEnd: "2026-10-13", submitEnd: "2026-10-13", exam: "115/10/30-11/08", release: "初試: 2026-10-20 | 複試: 2026-11-23", dates: { examStart: "2026-10-30", examEnd: "2026-10-08", releaseDates: ["2026-10-20", "2026-11-23"] } },
+            { name: "逢甲大學", type: "私立", applyStart: "2026-10-12", applyEnd: "2026-11-02", submitEnd: "2026-11-03", exam: "115/11/09-11/15", release: "初試: 2026-11-09 | 複試: 2026-11-21", dates: { examStart: "2026-11-09", examEnd: "2026-11-15", releaseDates: ["2026-11-09", "2026-11-21"] } },
+            { name: "東海大學", type: "私立", applyStart: "2026-10-15", applyEnd: "2026-11-03", submitEnd: "2026-11-04", exam: "115/11/13-11/21", release: "初試: 2026-11-10 | 複試: 2026-11-24, 11-30", dates: { examStart: "2026-11-13", examEnd: "2026-11-21", releaseDates: ["2026-11-10", "2026-11-24", "2026-11-30"] } },
+            { name: "長庚大學", type: "私立", applyStart: "2026-10-07", applyEnd: "2026-10-29", submitEnd: "2026-11-01", exam: "115/11/12-11/16", release: "初試: 2026-11-06 | 複試: 2026-11-26", dates: { examStart: "2026-11-12", examEnd: "2026-11-16", releaseDates: ["2026-11-06", "2026-11-26"] } },
+            { name: "亞洲大學", type: "私立", applyStart: "2026-10-14", applyEnd: "2026-11-10", submitEnd: "2026-11-02", exam: "115/11/20-11/21", release: "複試: 2026-11-30", dates: { examStart: "2026-11-20", examEnd: "2026-11-21", releaseDates: ["2026-11-30"] } }
+        ];
+
+        // Global Application State
+        let currentView = 'calendar';
+        let currentYear = 2026;
+        let currentMonth = 9; // October (0-indexed)
+        let onlyTracked = false;
+        let trackedSchools = new Set();
+
+        window.onload = function() {
+            loadTrackedSchools();
+            parseQueryParams();
+            initSchoolDropdown();
+            setupSearchListener();
+            renderApp();
+        };
+
+        function loadTrackedSchools() {
+            try {
+                const saved = localStorage.getItem('tracked_schools_v1');
+                if (saved) {
+                    trackedSchools = new Set(JSON.parse(saved));
+                }
+            } catch (e) {
+                console.error("Could not load tracked schools", e);
+            }
+        }
+
+        function saveTrackedSchools() {
+            try {
+                localStorage.setItem('tracked_schools_v1', JSON.stringify([...trackedSchools]));
+            } catch (e) {
+                console.error("Could not save tracked schools", e);
+            }
+        }
+
+        function toggleTrackSchool(schoolName, event) {
+            if (event) event.stopPropagation();
+            if (trackedSchools.has(schoolName)) {
+                trackedSchools.delete(schoolName);
+                showToast(`已從追蹤清單移除：${schoolName}`, 'info');
+            } else {
+                trackedSchools.add(schoolName);
+                showToast(`已加入追蹤清單：${schoolName}`, 'success');
+            }
+            saveTrackedSchools();
+            renderApp();
+        }
+
+        function parseQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('search')) document.getElementById('searchInput').value = params.get('search');
+            if (params.has('type')) document.getElementById('typeSelect').value = params.get('type');
+            if (params.has('school')) document.getElementById('schoolSelect').value = params.get('school');
+            if (params.has('event')) document.getElementById('eventTypeSelect').value = params.get('event');
+            if (params.get('tracked') === 'true') {
+                onlyTracked = true;
+                updateTrackFilterUI();
+            }
+        }
+
+        function switchView(view) {
+            currentView = view;
+            const calendarBtn = document.getElementById('viewCalendarBtn');
+            const listBtn = document.getElementById('viewListBtn');
+            const calendarView = document.getElementById('calendarView');
+            const listView = document.getElementById('listView');
+
+            if (view === 'calendar') {
+                calendarView.classList.remove('hidden');
+                listView.classList.add('hidden');
+                calendarBtn.className = "px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-xs";
+                listBtn.className = "px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200";
+            } else {
+                calendarView.classList.add('hidden');
+                listView.classList.remove('hidden');
+                listBtn.className = "px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-xs";
+                calendarBtn.className = "px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200";
+            }
+        }
+
+        function initSchoolDropdown() {
+            const typeFilter = document.getElementById('typeSelect').value;
+            const schoolSelect = document.getElementById('schoolSelect');
+            const currentSelected = schoolSelect.value;
+            
+            schoolSelect.innerHTML = '<option value="ALL">所有學校</option>';
+
+            const filtered = rawUniversities.filter(s => typeFilter === 'ALL' || s.type === typeFilter);
+            
+            filtered.forEach(school => {
+                const opt = document.createElement('option');
+                opt.value = school.name;
+                opt.textContent = school.name;
+                schoolSelect.appendChild(opt);
+            });
+
+            if ([...schoolSelect.options].some(o => o.value === currentSelected)) {
+                schoolSelect.value = currentSelected;
+            } else {
+                schoolSelect.value = 'ALL';
+            }
+        }
+
+        function handleTypeChange() {
+            initSchoolDropdown();
+            renderApp();
+        }
+
+        function toggleTrackFilter() {
+            onlyTracked = !onlyTracked;
+            updateTrackFilterUI();
+            renderApp();
+        }
+
+        function updateTrackFilterUI() {
+            const btn = document.getElementById('trackFilterBtn');
+            const icon = document.getElementById('trackFilterIcon');
+            const text = document.getElementById('trackFilterText');
+
+            if (onlyTracked) {
+                btn.className = "w-full py-2 px-3 border border-amber-300 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2 bg-amber-50 text-amber-800 shadow-xs";
+                icon.className = "fa-solid fa-star text-amber-500";
+                text.textContent = "已開啟：追蹤學校";
+            } else {
+                btn.className = "w-full py-2 px-3 border border-slate-200 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2 bg-slate-50 text-slate-700 hover:bg-slate-100";
+                icon.className = "fa-regular fa-star text-amber-500";
+                text.textContent = "只顯示追蹤學校";
+            }
+        }
+
+        function setupSearchListener() {
+            let timer;
+            document.getElementById('searchInput').addEventListener('input', () => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    renderApp();
+                }, 150);
+            });
+        }
+
+        function getFilteredSchools() {
+            const searchStr = document.getElementById('searchInput').value.trim().toLowerCase();
+            const typeVal = document.getElementById('typeSelect').value;
+            const schoolVal = document.getElementById('schoolSelect').value;
+
+            return rawUniversities.filter(item => {
+                const matchType = (typeVal === 'ALL' || item.type === typeVal);
+                const matchSchool = (schoolVal === 'ALL' || item.name === schoolVal);
+                const matchSearch = (searchStr === '' || item.name.toLowerCase().includes(searchStr));
+                const matchTracked = (!onlyTracked || trackedSchools.has(item.name));
+
+                return matchType && matchSchool && matchSearch && matchTracked;
+            });
+        }
+
+        function getEventsForDateRange(schools, eventTypeFilter) {
+            const dateMap = {};
+
+            schools.forEach(school => {
+                const addEv = (dateStr, type, title, detail) => {
+                    if (!dateStr) return;
+                    if (eventTypeFilter !== 'ALL' && type !== eventTypeFilter) return;
+
+                    if (!dateMap[dateStr]) dateMap[dateStr] = [];
+                    dateMap[dateStr].push({
+                        school: school.name,
+                        type: type,
+                        title: title,
+                        detail: detail
+                    });
+                };
+
+                // 1. 報名時間
+                if (school.applyStart) {
+                    addEv(school.applyStart, '報名', `${school.name} 報名開始`, `報名期間：${school.applyStart} ~ ${school.applyEnd}`);
+                }
+                if (school.applyEnd) {
+                    addEv(school.applyEnd, '報名', `${school.name} 報名截止`, `報名截止日（請注意時間）`);
+                }
+
+                // 2. 繳件截止
+                if (school.submitEnd) {
+                    addEv(school.submitEnd, '繳件', `${school.name} 繳件截止`, `備審資料上傳/郵寄截止日`);
+                }
+
+                // 3. 甄試/面試
+                if (school.dates.examStart && school.dates.examEnd) {
+                    let cur = new Date(school.dates.examStart);
+                    const end = new Date(school.dates.examEnd);
+                    let count = 0;
+                    while (cur <= end && count < 20) {
+                        const dStr = cur.toISOString().split('T')[0];
+                        addEv(dStr, '甄試', `${school.name} 甄試/面試`, `甄試說明：${school.exam}`);
+                        cur.setDate(cur.getDate() + 1);
+                        count++;
+                    }
+                }
+
+                // 4. 放榜日期
+                if (school.dates.releaseDates && school.dates.releaseDates.length > 0) {
+                    school.dates.releaseDates.forEach(rDate => {
+                        addEv(rDate, '放榜', `${school.name} 放榜`, `放榜詳情：${school.release}`);
+                    });
+                }
+            });
+
+            return dateMap;
+        }
+
+        function renderApp() {
+            const filteredSchools = getFilteredSchools();
+            const eventTypeFilter = document.getElementById('eventTypeSelect').value;
+
+            // Stats Update
+            const counterEl = document.getElementById('statsCounter');
+            counterEl.innerHTML = `
+                <span>顯示中：<strong class="text-indigo-600 font-bold">${filteredSchools.length}</strong> / ${rawUniversities.length} 校</span>
+                <span class="text-slate-300">|</span>
+                <span>已追蹤：<strong class="text-amber-600 font-bold">${trackedSchools.size}</strong> 校</span>
+            `;
+
+            renderCalendar(filteredSchools, eventTypeFilter);
+            renderSchoolCards(filteredSchools);
+        }
+
+        function renderCalendar(schools, eventTypeFilter) {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            const dateEvents = getEventsForDateRange(schools, eventTypeFilter);
+
+            // Month Label
+            document.getElementById('currentMonthLabel').textContent = `${currentYear} 年 ${currentMonth + 1} 月`;
+
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+
+            const startDayOfWeek = firstDay.getDay(); 
+            const totalDays = lastDay.getDate();
+
+            // Prev month padding
+            const prevMonthLastDay = new Date(currentYear, currentMonth, 0).getDate();
+            for (let i = startDayOfWeek - 1; i >= 0; i--) {
+                const dayNum = prevMonthLastDay - i;
+                const cell = document.createElement('div');
+                cell.className = "min-h-[90px] sm:min-h-[110px] p-1.5 bg-slate-50/60 rounded-xl border border-slate-100 text-slate-300 text-xs select-none";
+                cell.innerHTML = `<span class="font-semibold">${dayNum}</span>`;
+                grid.appendChild(cell);
+            }
+
+            // Current month days
+            for (let day = 1; day <= totalDays; day++) {
+                const monthStr = String(currentMonth + 1).padStart(2, '0');
+                const dayStr = String(day).padStart(2, '0');
+                const fullDateStr = `${currentYear}-${monthStr}-${dayStr}`;
+
+                const dayEvents = dateEvents[fullDateStr] || [];
+
+                const cell = document.createElement('div');
+                cell.className = "min-h-[90px] sm:min-h-[110px] p-1.5 bg-white rounded-xl border border-slate-200 hover:border-indigo-400 hover:shadow-xs transition flex flex-col justify-between cursor-pointer group";
+                cell.onclick = () => openModal(fullDateStr, dayEvents);
+
+                let badgeHtml = '';
+                const maxBadges = 3;
+                dayEvents.slice(0, maxBadges).forEach(ev => {
+                    let colorClasses = '';
+                    switch (ev.type) {
+                        case '報名':
+                            colorClasses = 'bg-rose-100 text-rose-700 border-rose-200';
+                            break;
+                        case '繳件':
+                            colorClasses = 'bg-amber-100 text-amber-700 border-amber-200';
+                            break;
+                        case '甄試':
+                            colorClasses = 'bg-indigo-100 text-indigo-700 border-indigo-200';
+                            break;
+                        case '放榜':
+                            colorClasses = 'bg-emerald-100 text-emerald-700 border-emerald-200';
+                            break;
+                        default:
+                            colorClasses = 'bg-slate-100 text-slate-700 border-slate-200';
+                    }
+                    
+                    const isTracked = trackedSchools.has(ev.school);
+                    const trackedMarker = isTracked ? '<i class="fa-solid fa-star text-amber-500 mr-0.5 text-[9px]"></i>' : '';
+
+                    badgeHtml += `<div class="event-badge truncate px-1.5 py-0.5 rounded text-[10px] font-medium border ${colorClasses} mb-1 flex items-center" title="${ev.title}">
+                        ${trackedMarker}<span class="truncate">${ev.school.replace('國立', '')} · ${ev.type}</span>
+                    </div>`;
+                });
+
+                if (dayEvents.length > maxBadges) {
+                    badgeHtml += `<div class="text-[10px] text-slate-400 font-semibold px-1">+ 還有 ${dayEvents.length - maxBadges} 項</div>`;
+                }
+
+                const isToday = (fullDateStr === '2026-10-06');
+                const todayBadge = isToday ? 'bg-indigo-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-xs font-bold' : 'text-slate-700 font-bold text-xs';
+
+                cell.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="${todayBadge}">${day}</span>
+                            ${dayEvents.length > 0 ? `<span class="w-1.5 h-1.5 rounded-full bg-indigo-500 sm:hidden"></span>` : ''}
+                        </div>
+                        <div class="space-y-0.5">
+                            ${badgeHtml}
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(cell);
+            }
+
+            // Next month padding
+            const totalCellsSoFar = startDayOfWeek + totalDays;
+            const remainingCells = (totalCellsSoFar > 35 ? 42 : 35) - totalCellsSoFar;
+            for (let i = 1; i <= remainingCells; i++) {
+                const cell = document.createElement('div');
+                cell.className = "min-h-[90px] sm:min-h-[110px] p-1.5 bg-slate-50/60 rounded-xl border border-slate-100 text-slate-300 text-xs select-none";
+                cell.innerHTML = `<span class="font-semibold">${i}</span>`;
+                grid.appendChild(cell);
+            }
+        }
+
+        function renderSchoolCards(schools) {
+            const container = document.getElementById('schoolCardsContainer');
+            container.innerHTML = '';
+
+            if (schools.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200 text-slate-400">
+                        <i class="fa-regular fa-folder-open text-4xl mb-3 text-slate-300"></i>
+                        <p class="text-sm font-medium">未找到符合條件的學校資訊</p>
+                        <p class="text-xs text-slate-400 mt-1">您可以嘗試調整搜尋關鍵字或關閉「只顯示追蹤」篩選。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            schools.forEach(s => {
+                const card = document.createElement('div');
+                const isTracked = trackedSchools.has(s.name);
+                
+                card.className = `bg-white rounded-2xl border p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between relative ${isTracked ? 'border-amber-300 bg-amber-50/10' : 'border-slate-200'}`;
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-lg ${s.type === '國立' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-amber-50 text-amber-700 border border-amber-100'}">
+                                ${s.type}
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-slate-400 font-mono">115/116 學年</span>
+                                <button onclick="toggleTrackSchool('${s.name}', event)" title="${isTracked ? '取消追蹤' : '加入追蹤'}" class="p-1 rounded-lg hover:bg-slate-100 transition">
+                                    <i class="${isTracked ? 'fa-solid fa-star text-amber-500' : 'fa-regular fa-star text-slate-400'} text-base"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            ${s.name}
+                        </h3>
+
+                        <div class="space-y-2 text-xs text-slate-600 mb-4">
+                            <div class="flex items-start gap-2">
+                                <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 font-semibold shrink-0">報名</span>
+                                <span>${s.applyStart} ~ ${s.applyEnd}</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-semibold shrink-0">繳件</span>
+                                <span>${s.submitEnd} 截止</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-semibold shrink-0">甄試</span>
+                                <span>${s.exam}</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold shrink-0">放榜</span>
+                                <span>${s.release}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. 將下方按鈕改為判斷是否有 url：有 url 則開啟新分頁，無則顯示提示訊息 -->
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <span class="inline-flex items-center gap-1"><i class="fa-solid fa-circle-info text-slate-400"></i> 詳細簡章請見各校官網</span>
+                        ${s.url ? `
+                            <a href="${s.url}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-semibold hover:underline flex items-center gap-1">
+                                開啟簡章網頁 <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                            </a>
+                        ` : `
+                            <button onclick="showToast('提示：請至 ${s.name} 招生網頁下載最新簡章內容！', 'info')" class="text-indigo-600 font-semibold hover:underline flex items-center gap-1">
+                                簡章說明 <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                            </button>
+                        `}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            } else if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderApp();
+        }
+
+        function jumpToMonth(year, month) {
+            currentYear = year;
+            currentMonth = month;
+            renderApp();
+        }
+
+        function resetToToday() {
+            currentYear = 2026;
+            currentMonth = 9; // October
+            renderApp();
+        }
+
+        function openModal(dateStr, events) {
+            const modal = document.getElementById('eventModal');
+            const title = document.getElementById('modalDateTitle');
+            const content = document.getElementById('modalContent');
+
+            const parts = dateStr.split('-');
+            const rocYear = parseInt(parts[0]) - 1911;
+            title.textContent = `${dateStr} (民國${rocYear}年${parts[1]}月${parts[2]}日) 重要日程`;
+
+            if (events.length === 0) {
+                content.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 text-sm">
+                        <i class="fa-regular fa-calendar-xmark text-3xl mb-2 text-slate-300"></i>
+                        <p>本日無相符的校系推甄日程活動</p>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = events.map(ev => {
+                    let badgeColor = 'bg-slate-100 text-slate-700';
+                    if (ev.type === '報名') badgeColor = 'bg-rose-100 text-rose-700';
+                    if (ev.type === '繳件') badgeColor = 'bg-amber-100 text-amber-700';
+                    if (ev.type === '甄試') badgeColor = 'bg-indigo-100 text-indigo-700';
+                    if (ev.type === '放榜') badgeColor = 'bg-emerald-100 text-emerald-700';
+
+                    const isTracked = trackedSchools.has(ev.school);
+
+                    return `
+                        <div class="p-3.5 rounded-xl border border-slate-100 bg-slate-50/80 hover:bg-slate-50 transition flex items-start justify-between gap-2">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1.5">
+                                    <span class="font-bold text-slate-800 text-sm">${ev.school}</span>
+                                    <span class="px-2 py-0.5 rounded text-xs font-semibold ${badgeColor}">${ev.type}</span>
+                                </div>
+                                <p class="text-xs font-semibold text-slate-700 mb-0.5">${ev.title}</p>
+                                <p class="text-xs text-slate-500">${ev.detail}</p>
+                            </div>
+                            <button onclick="toggleTrackSchool('${ev.school}', event)" class="p-1 text-slate-400 hover:text-amber-500 transition shrink-0">
+                                <i class="${isTracked ? 'fa-solid fa-star text-amber-500' : 'fa-regular fa-star'} text-base"></i>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('eventModal').classList.add('hidden');
+        }
+
+        function shareCalendar() {
+            const params = new URLSearchParams();
+            const search = document.getElementById('searchInput').value.trim();
+            const type = document.getElementById('typeSelect').value;
+            const school = document.getElementById('schoolSelect').value;
+            const event = document.getElementById('eventTypeSelect').value;
+
+            if (search) params.set('search', search);
+            if (type !== 'ALL') params.set('type', type);
+            if (school !== 'ALL') params.set('school', school);
+            if (event !== 'ALL') params.set('event', event);
+            if (onlyTracked) params.set('tracked', 'true');
+
+            const shareUrl = window.location.origin + window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+
+            // Copy link using fallback document.execCommand('copy') or clipboard
+            try {
+                const dummy = document.createElement('input');
+                document.body.appendChild(dummy);
+                dummy.value = shareUrl;
+                dummy.select();
+                document.execCommand('copy');
+                document.body.removeChild(dummy);
+                showToast('已複製分享網址至剪貼簿！可以傳送給同學囉！', 'success');
+            } catch (err) {
+                showToast('複製失敗，請手動複製網址。', 'error');
+            }
+        }
+
+        function exportICal() {
+            const filteredSchools = getFilteredSchools();
+            if (filteredSchools.length === 0) {
+                showToast('目前沒有可匯出的學校日程', 'error');
+                return;
+            }
+
+            let icsContent = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'PRODID:-//Taiwan Graduate Admission Calendar//TW',
+                'CALSCALE:GREGORIAN',
+                'METHOD:PUBLISH'
+            ];
+
+            const formatICSDate = (dateStr) => {
+                if (!dateStr) return null;
+                return dateStr.replace(/-/g, '');
+            };
+
+            filteredSchools.forEach(s => {
+                // Apply Start
+                if (s.applyStart) {
+                    icsContent.push(
+                        'BEGIN:VEVENT',
+                        `SUMMARY:[推甄報名] ${s.name}`,
+                        `DESCRIPTION:${s.name} 推甄報名開始！報名期間：${s.applyStart} ~ ${s.applyEnd}`,
+                        `DTSTART;VALUE=DATE:${formatICSDate(s.applyStart)}`,
+                        `DTEND;VALUE=DATE:${formatICSDate(s.applyStart)}`,
+                        'END:VEVENT'
+                    );
+                }
+                // Submit End
+                if (s.submitEnd) {
+                    icsContent.push(
+                        'BEGIN:VEVENT',
+                        `SUMMARY:[繳件截止] ${s.name}`,
+                        `DESCRIPTION:${s.name} 推甄備審資料上傳/郵寄截止日`,
+                        `DTSTART;VALUE=DATE:${formatICSDate(s.submitEnd)}`,
+                        `DTEND;VALUE=DATE:${formatICSDate(s.submitEnd)}`,
+                        'END:VEVENT'
+                    );
+                }
+            });
+
+            icsContent.push('END:VCALENDAR');
+
+            const blob = new Blob([icsContent.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.setAttribute('download', `115_研究所推甄日程表.ics`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('已匯出 iCal (.ics) 行事曆檔案！', 'success');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            let bgClasses = 'bg-slate-800 text-white';
+            let icon = 'fa-circle-info text-indigo-400';
+
+            if (type === 'success') {
+                bgClasses = 'bg-slate-900 text-white border border-emerald-500/30';
+                icon = 'fa-circle-check text-emerald-400';
+            } else if (type === 'error') {
+                bgClasses = 'bg-rose-900 text-white border border-rose-500/30';
+                icon = 'fa-triangle-exclamation text-rose-300';
+            }
+
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg text-xs font-medium flex items-center gap-2.5 toast-animate ${bgClasses}`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-sm"></i> <span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
